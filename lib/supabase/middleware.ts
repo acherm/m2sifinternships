@@ -38,6 +38,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const hasPostAuthCookie = request.cookies.get("post_auth")?.value === "1"
+  const hasSupabaseAuthCookies = request.cookies.getAll().some((c) => c.name.startsWith("sb-"))
 
   if (
     request.nextUrl.pathname !== "/" &&
@@ -45,7 +46,8 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.startsWith("/api") &&
-    !hasPostAuthCookie
+    !hasPostAuthCookie &&
+    !hasSupabaseAuthCookies
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
