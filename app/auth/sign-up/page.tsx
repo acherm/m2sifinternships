@@ -47,7 +47,7 @@ export default function Page() {
         email,
         password: Math.random().toString(36).slice(-8), // Temporary password
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/confirm`,
           data: {
             first_name: firstName,
             last_name: lastName,
