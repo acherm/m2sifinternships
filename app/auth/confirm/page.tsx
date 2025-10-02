@@ -14,7 +14,7 @@ export default function ConfirmPage() {
       const tokenHash = params.get("token_hash")
       const codeOrToken = params.get("code") || params.get("token")
       const type = params.get("type")
-      const next = params.get("next") || "/"
+      const next = params.get("next") || "/app"
       const supabase = createClient()
 
       // Debug: Log all URL parameters
