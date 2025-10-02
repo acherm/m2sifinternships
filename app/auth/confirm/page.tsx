@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
@@ -17,6 +17,19 @@ export default function ConfirmPage() {
       const type = params.get("type")
       const next = params.get("next") || "/app"
       const supabase = createClient()
+
+      // Aggressive fallback: navigate to app shortly after load regardless of errors
+      const redirected = { done: false }
+      const goNext = () => {
+        if (redirected.done) return
+        redirected.done = true
+        try {
+          window.location.replace(next || "/app")
+        } catch {
+          router.replace(next || "/app")
+        }
+      }
+      setTimeout(goNext, 700)
 
       // Debug: Log all URL parameters
       console.log("🔍 Confirmation page URL params:", {
@@ -54,13 +67,7 @@ export default function ConfirmPage() {
             await new Promise((r) => setTimeout(r, 150))
           }
           setMessage("Signed in successfully! Redirecting…")
-          setTimeout(() => {
-            try {
-              window.location.replace(next || "/")
-            } catch {
-              router.replace(next || "/")
-            }
-          }, 200)
+          setTimeout(goNext, 200)
           return
         } catch (err) {
           console.warn("⚠️ Magic link verify threw, waiting for session:", err)
@@ -94,13 +101,7 @@ export default function ConfirmPage() {
             await new Promise((r) => setTimeout(r, 150))
           }
           setMessage("Signed in successfully! Redirecting...")
-          setTimeout(() => {
-            try {
-              window.location.replace(next || "/")
-            } catch {
-              router.replace(next || "/")
-            }
-          }, 200)
+          setTimeout(goNext, 200)
           return
         } catch (err) {
           console.warn("⚠️ Exchange threw, waiting for session:", err)
@@ -153,17 +154,13 @@ export default function ConfirmPage() {
           if (data.session) break
           await new Promise((r) => setTimeout(r, 150))
         }
-        setTimeout(() => {
-          try {
-            window.location.replace(next || "/")
-          } catch {
-            router.replace(next || "/")
-          }
-        }, 200)
+        setTimeout(goNext, 200)
 
       } catch (error) {
         console.error("❌ Unexpected error:", error)
         setMessage("An unexpected error occurred. Please try again.")
+        // fallback redirect
+        setTimeout(goNext, 400)
       }
     }
     run()
