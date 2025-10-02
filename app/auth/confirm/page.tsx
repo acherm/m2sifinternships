@@ -36,6 +36,8 @@ export default function ConfirmPage() {
             setMessage(`Confirmation failed: ${error.message}`)
             return
           }
+          // Mark post-auth to let middleware allow next navigation
+          try { document.cookie = "post_auth=1; Path=/; Max-Age=10" } catch {}
           // Poll until session exists to avoid SSR race in middleware
           const deadline = Date.now() + 4000
           while (Date.now() < deadline) {
@@ -88,6 +90,8 @@ export default function ConfirmPage() {
         console.log("✅ Verification successful!")
         setMessage("Email confirmed successfully! Redirecting...")
         
+        // Mark post-auth to let middleware allow next navigation
+        try { document.cookie = "post_auth=1; Path=/; Max-Age=10" } catch {}
         // Poll until session exists to avoid SSR race in middleware
         const deadline = Date.now() + 4000
         while (Date.now() < deadline) {

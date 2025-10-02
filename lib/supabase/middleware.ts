@@ -37,17 +37,25 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const hasPostAuthCookie = request.cookies.get("post_auth")?.value === "1"
+
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/api")
+    !request.nextUrl.pathname.startsWith("/api") &&
+    !hasPostAuthCookie
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
     url.pathname = "/auth/login"
     return NextResponse.redirect(url)
+  }
+
+  // If we had a post_auth cookie, clear it on the response so it only skips once
+  if (hasPostAuthCookie) {
+    supabaseResponse.cookies.set("post_auth", "", { path: "/", maxAge: 0 })
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
