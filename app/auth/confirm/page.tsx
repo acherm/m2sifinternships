@@ -36,9 +36,13 @@ export default function ConfirmPage() {
             type: 'magiclink' as any,
           })
           if (error) {
-            console.error("❌ Magic link verification failed:", error)
-            setMessage(`Confirmation failed: ${error.message}`)
-            return
+            // If session already exists despite error (race), proceed
+            const { data } = await supabase.auth.getSession()
+            if (!data.session) {
+              console.error("❌ Magic link verification failed:", error)
+              setMessage(`Confirmation failed: ${error.message}`)
+              return
+            }
           }
           // Mark post-auth to let middleware allow next navigation
           try { document.cookie = "post_auth=1; Path=/; Max-Age=10" } catch {}
@@ -71,9 +75,13 @@ export default function ConfirmPage() {
           setMessage("Completing sign-in...")
           const { error } = await supabase.auth.exchangeCodeForSession(window.location.href)
           if (error) {
-            console.error("❌ Code exchange failed:", error)
-            setMessage(`Confirmation failed: ${error.message}`)
-            return
+            // If session already exists despite exchange error (likely missing verifier in a different tab), proceed
+            const { data } = await supabase.auth.getSession()
+            if (!data.session) {
+              console.error("❌ Code exchange failed:", error)
+              setMessage(`Confirmation failed: ${error.message}`)
+              return
+            }
           }
 
           // Mark post-auth to let middleware allow next navigation
