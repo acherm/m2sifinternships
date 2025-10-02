@@ -5,22 +5,9 @@ import { AdminDashboard } from "@/components/admin-dashboard"
 import { StudentSubjectBrowser } from "@/components/student-subject-browser"
 import { SupervisorDashboardClient } from "@/components/supervisor-dashboard-client"
 import ObserverDashboard from "@/components/observer-dashboard"
-import "use client"
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import ClientSessionGate from "@/components/client-session-gate"
 
-function ClientSessionGate() {
-  const router = useRouter()
-  useEffect(() => {
-    const url = new URL(window.location.href)
-    // After confirm, just try to go home; middleware should allow if session exists
-    const t = setTimeout(() => {
-      router.replace("/")
-    }, 500)
-    return () => clearTimeout(t)
-  }, [router])
-  return null
-}
+// ClientSessionGate moved to a client component to avoid build errors
 
 export default async function AppPage() {
   const supabase = await createClient()
