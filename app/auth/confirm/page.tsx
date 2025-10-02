@@ -14,7 +14,7 @@ export default function ConfirmPage() {
       const tokenHash = params.get("token_hash")
       const codeOrToken = params.get("code") || params.get("token")
       const type = params.get("type")
-      const next = params.get("next") || "/app"
+      const next = params.get("next") || "/"
       const supabase = createClient()
 
       // Debug: Log all URL parameters
@@ -36,8 +36,15 @@ export default function ConfirmPage() {
             setMessage(`Confirmation failed: ${error.message}`)
             return
           }
+          // Poll until session exists to avoid SSR race in middleware
+          const deadline = Date.now() + 4000
+          while (Date.now() < deadline) {
+            const { data } = await supabase.auth.getSession()
+            if (data.session) break
+            await new Promise((r) => setTimeout(r, 150))
+          }
           setMessage("Signed in successfully! Redirecting...")
-          setTimeout(() => router.replace(next), 800)
+          setTimeout(() => router.replace(next || "/"), 200)
           return
         } catch (err) {
           console.error("❌ Unexpected exchange error:", err)
@@ -81,10 +88,16 @@ export default function ConfirmPage() {
         console.log("✅ Verification successful!")
         setMessage("Email confirmed successfully! Redirecting...")
         
-        // Wait a moment for the session to be established
+        // Poll until session exists to avoid SSR race in middleware
+        const deadline = Date.now() + 4000
+        while (Date.now() < deadline) {
+          const { data } = await supabase.auth.getSession()
+          if (data.session) break
+          await new Promise((r) => setTimeout(r, 150))
+        }
         setTimeout(() => {
-          router.replace(next)
-        }, 1000)
+          router.replace(next || "/")
+        }, 200)
 
       } catch (error) {
         console.error("❌ Unexpected error:", error)
