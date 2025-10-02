@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       to: [studentEmail],
       subject: '🎓 Internship Assignment Confirmation - M2 SIF',
       html: emailHtml,
-      reply_to: 'mathieu.acher@inria.fr', // Your email for replies
+      replyTo: 'mathieu.acher@inria.fr', // Your email for replies
     })
 
     if (error) {
