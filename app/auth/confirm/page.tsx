@@ -12,6 +12,7 @@ export default function ConfirmPage() {
   useEffect(() => {
     const run = async () => {
       const tokenHash = params.get("token_hash")
+      const codeOrToken = params.get("code") || params.get("token")
       const type = params.get("type")
       const next = params.get("next") || "/app"
       const supabase = createClient()
@@ -24,6 +25,26 @@ export default function ConfirmPage() {
         allParams: Object.fromEntries(params.entries()),
         fullURL: window.location.href
       })
+
+      // If we have a PKCE/code-style param, exchange it for a session immediately
+      if (codeOrToken) {
+        try {
+          setMessage("Completing sign-in...")
+          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href)
+          if (error) {
+            console.error("❌ Code exchange failed:", error)
+            setMessage(`Confirmation failed: ${error.message}`)
+            return
+          }
+          setMessage("Signed in successfully! Redirecting...")
+          setTimeout(() => router.replace(next), 800)
+          return
+        } catch (err) {
+          console.error("❌ Unexpected exchange error:", err)
+          setMessage("An unexpected error occurred. Please try again.")
+          return
+        }
+      }
 
       // Handle password recovery
       if (type === "recovery") {
