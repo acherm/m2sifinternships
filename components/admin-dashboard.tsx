@@ -183,31 +183,6 @@ export function AdminDashboard() {
 
       if (error) throw error
 
-      if (reviewStatus === "validated" || reviewStatus === "needs_modification" || reviewStatus === "refused") {
-        try {
-          const response = await fetch("/api/send-notification", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              subjectId: selectedSubject.id,
-              status: reviewStatus,
-              adminComment: adminComment,
-            }),
-          })
-
-          if (!response.ok) {
-            console.error("Failed to send email notification")
-          } else {
-            const result = await response.json()
-            console.log("Email notification sent:", result.message)
-          }
-        } catch (emailError) {
-          console.error("Error sending email notification:", emailError)
-          // Don't fail the main operation if email fails
-        }
-      }
 
       setSubjects((prev) =>
         prev.map((subject) =>

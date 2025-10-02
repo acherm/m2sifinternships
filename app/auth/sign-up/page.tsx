@@ -42,44 +42,25 @@ export default function Page() {
     }
 
     try {
-      const signupData = {
+      // Use signUp with a temporary password - this will send a confirmation email
+      const { data, error } = await supabase.auth.signUp({
         email,
-        password,
+        password: Math.random().toString(36).slice(-8), // Temporary password
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
           data: {
             first_name: firstName,
             last_name: lastName,
             role: role,
           }
         }
-      }
-      
-      const { data, error } = await supabase.auth.signUp(signupData)
+      })
       
       if (error) throw error
       
-      if (data.user) {
-        
-        // Create profile immediately after user creation
-        try {
-          const { error: profileError } = await supabase.from("profiles").insert({
-            id: data.user.id,
-            email: data.user.email,
-            first_name: firstName,
-            last_name: lastName,
-            role: role,
-          })
-          
-          if (profileError) {
-            console.error("Profile creation error:", profileError)
-            // Don't throw error here, let the user continue
-          }
-        } catch (profileErr) {
-          console.error("Profile creation failed:", profileErr)
-        }
-        
-        router.push("/auth/sign-up-success")
-      }
+      console.log("🎯 Signup magic link sent:", data)
+      
+      router.push("/auth/sign-up-success")
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {

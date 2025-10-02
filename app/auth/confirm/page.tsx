@@ -16,31 +16,59 @@ export default function ConfirmPage() {
       const next = params.get("next") || "/app"
       const supabase = createClient()
 
+      // Debug: Log all URL parameters
+      console.log("🔍 Confirmation page URL params:", {
+        token_hash: tokenHash,
+        type: type,
+        next: next,
+        allParams: Object.fromEntries(params.entries()),
+        fullURL: window.location.href
+      })
+
+      // Handle password recovery
       if (type === "recovery") {
-        // Password recovery flows could be handled here if needed
-        router.replace(next)
+        setMessage("Password recovery confirmed. Redirecting...")
+        setTimeout(() => router.replace(next), 1000)
         return
       }
 
+      // Check if we have a token
       if (!tokenHash) {
-        setMessage("Missing confirmation token.")
+        setMessage("Missing confirmation token. Redirecting to login...")
+        console.log("❌ No token_hash found in URL parameters")
+        setTimeout(() => router.replace("/auth/login"), 2000)
         return
       }
 
-      let error: any = null
-      if (type === "magiclink" || type === "email") {
-        const res = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash })
-        error = res.error
-      } else {
-        const res = await supabase.auth.verifyOtp({ type: "signup", token_hash: tokenHash })
-        error = res.error
-      }
-      if (error) {
-        setMessage(`Confirmation failed: ${error.message}`)
-        return
-      }
+      try {
+        console.log("🔄 Attempting to verify OTP...")
+        
+        // Try to verify the OTP - let Supabase handle the type automatically
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: type as any || 'email'
+        })
 
-      router.replace(next)
+        console.log("📧 Verification result:", { error, data })
+
+        if (error) {
+          console.error("❌ Verification failed:", error)
+          setMessage(`Confirmation failed: ${error.message}`)
+          return
+        }
+
+        console.log("✅ Verification successful!")
+        setMessage("Email confirmed successfully! Redirecting...")
+        
+        // Wait a moment for the session to be established
+        setTimeout(() => {
+          router.replace(next)
+        }, 1000)
+
+      } catch (error) {
+        console.error("❌ Unexpected error:", error)
+        setMessage("An unexpected error occurred. Please try again.")
+      }
     }
     run()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -48,7 +76,17 @@ export default function ConfirmPage() {
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm text-sm text-muted-foreground">{message}</div>
+      <div className="w-full max-w-sm text-center">
+        <div className="mb-4">
+          <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+        <h1 className="text-xl font-semibold text-gray-900 mb-2">Email Confirmation</h1>
+        <p className="text-sm text-muted-foreground">{message}</p>
+      </div>
     </div>
   )
 }
