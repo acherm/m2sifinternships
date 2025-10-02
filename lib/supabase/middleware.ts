@@ -38,7 +38,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const hasPostAuthCookie = request.cookies.get("post_auth")?.value === "1"
-  const hasSupabaseAuthCookies = request.cookies.getAll().some((c) => c.name.startsWith("sb-"))
+  // Supabase cookies can be named sb-access-token/sb-refresh-token or sb:token (colon form)
+  const hasSupabaseAuthCookies = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb") || c.name.includes("supabase"))
 
   if (
     request.nextUrl.pathname !== "/" &&

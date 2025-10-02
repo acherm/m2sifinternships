@@ -46,7 +46,13 @@ export default function ConfirmPage() {
             await new Promise((r) => setTimeout(r, 150))
           }
           setMessage("Signed in successfully! Redirecting...")
-          setTimeout(() => router.replace(next || "/"), 200)
+          setTimeout(() => {
+            try {
+              window.location.replace(next || "/")
+            } catch {
+              router.replace(next || "/")
+            }
+          }, 200)
           return
         } catch (err) {
           console.error("❌ Unexpected exchange error:", err)
@@ -100,7 +106,11 @@ export default function ConfirmPage() {
           await new Promise((r) => setTimeout(r, 150))
         }
         setTimeout(() => {
-          router.replace(next || "/")
+          try {
+            window.location.replace(next || "/")
+          } catch {
+            router.replace(next || "/")
+          }
         }, 200)
 
       } catch (error) {
