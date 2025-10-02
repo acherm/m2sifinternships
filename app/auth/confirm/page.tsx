@@ -27,42 +27,7 @@ export default function ConfirmPage() {
         fullURL: window.location.href
       })
 
-      // If we have an OAuth/PKCE code param (from OAuth providers), exchange it
-      if (codeParam) {
-        try {
-          setMessage("Completing sign-in...")
-          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href)
-          if (error) {
-            console.error("❌ Code exchange failed:", error)
-            setMessage(`Confirmation failed: ${error.message}`)
-            return
-          }
-          // Mark post-auth to let middleware allow next navigation
-          try { document.cookie = "post_auth=1; Path=/; Max-Age=10" } catch {}
-          // Poll until session exists to avoid SSR race in middleware
-          const deadline = Date.now() + 4000
-          while (Date.now() < deadline) {
-            const { data } = await supabase.auth.getSession()
-            if (data.session) break
-            await new Promise((r) => setTimeout(r, 150))
-          }
-          setMessage("Signed in successfully! Redirecting...")
-          setTimeout(() => {
-            try {
-              window.location.replace(next || "/")
-            } catch {
-              router.replace(next || "/")
-            }
-          }, 200)
-          return
-        } catch (err) {
-          console.error("❌ Unexpected exchange error:", err)
-          setMessage("An unexpected error occurred. Please try again.")
-          return
-        }
-      }
-
-      // If we have a PKCE magiclink token (token=pkce_...), verify via token_hash flow
+      // If we have a PKCE magiclink token (token=pkce_...), verify via token_hash flow first
       if (pkceToken) {
         try {
           setMessage("Verifying your email link…")
@@ -75,7 +40,6 @@ export default function ConfirmPage() {
             setMessage(`Confirmation failed: ${error.message}`)
             return
           }
-
           // Mark post-auth to let middleware allow next navigation
           try { document.cookie = "post_auth=1; Path=/; Max-Age=10" } catch {}
           // Poll until session exists to avoid SSR race in middleware
@@ -96,6 +60,42 @@ export default function ConfirmPage() {
           return
         } catch (err) {
           console.error("❌ Unexpected magic link verify error:", err)
+          setMessage("An unexpected error occurred. Please try again.")
+          return
+        }
+      }
+
+      // If we have an OAuth/PKCE code param (from OAuth providers), exchange it
+      if (codeParam && codeParam.length > 0) {
+        try {
+          setMessage("Completing sign-in...")
+          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href)
+          if (error) {
+            console.error("❌ Code exchange failed:", error)
+            setMessage(`Confirmation failed: ${error.message}`)
+            return
+          }
+
+          // Mark post-auth to let middleware allow next navigation
+          try { document.cookie = "post_auth=1; Path=/; Max-Age=10" } catch {}
+          // Poll until session exists to avoid SSR race in middleware
+          const deadline = Date.now() + 4000
+          while (Date.now() < deadline) {
+            const { data } = await supabase.auth.getSession()
+            if (data.session) break
+            await new Promise((r) => setTimeout(r, 150))
+          }
+          setMessage("Signed in successfully! Redirecting...")
+          setTimeout(() => {
+            try {
+              window.location.replace(next || "/")
+            } catch {
+              router.replace(next || "/")
+            }
+          }, 200)
+          return
+        } catch (err) {
+          console.error("❌ Unexpected exchange error:", err)
           setMessage("An unexpected error occurred. Please try again.")
           return
         }
