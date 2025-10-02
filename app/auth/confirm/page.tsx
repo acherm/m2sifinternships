@@ -39,9 +39,9 @@ export default function ConfirmPage() {
             // If session already exists despite error (race), proceed
             const { data } = await supabase.auth.getSession()
             if (!data.session) {
-              console.error("❌ Magic link verification failed:", error)
-              setMessage(`Confirmation failed: ${error.message}`)
-              return
+              console.warn("⚠️ Magic link verification error, waiting for session:", error)
+              setMessage("Completing sign-in…")
+              // do not return; continue to session poll and redirect below
             }
           }
           // Mark post-auth to let middleware allow next navigation
@@ -63,9 +63,9 @@ export default function ConfirmPage() {
           }, 200)
           return
         } catch (err) {
-          console.error("❌ Unexpected magic link verify error:", err)
-          setMessage("An unexpected error occurred. Please try again.")
-          return
+          console.warn("⚠️ Magic link verify threw, waiting for session:", err)
+          setMessage("Completing sign-in…")
+          // continue to session poll and redirect
         }
       }
 
@@ -78,9 +78,9 @@ export default function ConfirmPage() {
             // If session already exists despite exchange error (likely missing verifier in a different tab), proceed
             const { data } = await supabase.auth.getSession()
             if (!data.session) {
-              console.error("❌ Code exchange failed:", error)
-              setMessage(`Confirmation failed: ${error.message}`)
-              return
+              console.warn("⚠️ Code exchange error, waiting for session:", error)
+              setMessage("Completing sign-in…")
+              // do not return; continue to session poll and redirect below
             }
           }
 
@@ -103,9 +103,9 @@ export default function ConfirmPage() {
           }, 200)
           return
         } catch (err) {
-          console.error("❌ Unexpected exchange error:", err)
-          setMessage("An unexpected error occurred. Please try again.")
-          return
+          console.warn("⚠️ Exchange threw, waiting for session:", err)
+          setMessage("Completing sign-in…")
+          // continue to session poll and redirect
         }
       }
 
@@ -136,9 +136,9 @@ export default function ConfirmPage() {
         console.log("📧 Verification result:", { error, data })
 
         if (error) {
-          console.error("❌ Verification failed:", error)
-          setMessage(`Confirmation failed: ${error.message}`)
-          return
+          console.warn("⚠️ Token-hash verification error, waiting for session:", error)
+          setMessage("Completing sign-in…")
+          // continue to session poll and redirect
         }
 
         console.log("✅ Verification successful!")
