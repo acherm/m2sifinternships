@@ -42,10 +42,10 @@ export default function Page() {
     }
 
     try {
-      // Use signUp with a temporary password - this will send a confirmation email
+      // Use the user's entered password to respect Supabase password policy
       const { data, error } = await supabase.auth.signUp({
         email,
-        password: Math.random().toString(36).slice(-8), // Temporary password
+        password, // use provided password
         options: {
           emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || window.location.origin}/auth/confirm`,
           data: {
@@ -55,13 +55,22 @@ export default function Page() {
           }
         }
       })
-      
-      if (error) throw error
-      
-      console.log("🎯 Signup magic link sent:", data)
-      
+
+      if (error) {
+        console.error("❌ Signup error:", error)
+        throw error
+      }
+
+      console.log("✅ Signup successful:", {
+        user: data.user?.id,
+        session: data.session?.user?.id,
+        email: data.user?.email,
+        metadata: data.user?.user_metadata
+      })
+
       router.push("/auth/sign-up-success")
     } catch (error: unknown) {
+      console.error("❌ Signup failed:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
       setIsLoading(false)

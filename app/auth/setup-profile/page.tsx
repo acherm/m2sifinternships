@@ -22,6 +22,8 @@ export default function SetupProfile() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!role || !firstName || !lastName) return
+    // Disallow administrator role selection even if tampered in devtools
+    if (role === "admin") return
 
     setLoading(true)
 
@@ -35,17 +37,42 @@ export default function SetupProfile() {
         return
       }
 
-      const { error } = await supabase.from("profiles").insert({
-        id: user.id,
-        email: user.email,
-        first_name: firstName,
-        last_name: lastName,
-        role: role,
-      })
+      // Check if profile already exists (from trigger)
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
 
-      if (error) {
-        console.error("Error creating profile:", error)
-        return
+      if (existingProfile) {
+        // Profile exists, update it with the provided information
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            first_name: firstName,
+            last_name: lastName,
+            role: role,
+          })
+          .eq("id", user.id)
+
+        if (error) {
+          console.error("Error updating profile:", error)
+          return
+        }
+      } else {
+        // Profile doesn't exist, create it
+        const { error } = await supabase.from("profiles").insert({
+          id: user.id,
+          email: user.email,
+          first_name: firstName,
+          last_name: lastName,
+          role: role,
+        })
+
+        if (error) {
+          console.error("Error creating profile:", error)
+          return
+        }
       }
 
       router.push("/app")
@@ -85,7 +112,6 @@ export default function SetupProfile() {
                 <SelectContent>
                   <SelectItem value="student">Student</SelectItem>
                   <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="admin">Administrator</SelectItem>
                 </SelectContent>
               </Select>
             </div>
