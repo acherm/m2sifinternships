@@ -12,6 +12,8 @@ import { Shield } from "lucide-react"
 
 export default function AdminSignupPage() {
   const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [repeatPassword, setRepeatPassword] = useState("")
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -27,18 +29,25 @@ export default function AdminSignupPage() {
     try {
       const supabase = createClient()
 
-      // Sign up with admin role using magic link
+      if (password !== repeatPassword) {
+        setError("Passwords do not match")
+        return
+      }
+
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+
+      // Sign up with admin role using email+password so it respects password policy
       const { data, error } = await supabase.auth.signUp({
         email,
-        password: Math.random().toString(36).slice(-8), // Temporary password
+        password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          emailRedirectTo: `${baseUrl}/auth/confirm`,
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: 'administrator'
-          }
-        }
+            role: 'admin',
+          },
+        },
       })
 
       if (error) {
@@ -46,11 +55,8 @@ export default function AdminSignupPage() {
         return
       }
 
-      setSuccess(true)
-      // Redirect to admin dashboard after successful signup
-      setTimeout(() => {
-        router.push("/app")
-      }, 2000)
+      // Go to a success page instructing the user to check their email
+      router.push("/auth/sign-up-success")
     } catch (err) {
       setError("An unexpected error occurred")
     } finally {
@@ -122,6 +128,29 @@ export default function AdminSignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="repeatPassword">Repeat Password</Label>
+                <Input
+                  id="repeatPassword"
+                  type="password"
+                  value={repeatPassword}
+                  onChange={(e) => setRepeatPassword(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
 

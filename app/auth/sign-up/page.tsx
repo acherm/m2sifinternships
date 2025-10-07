@@ -25,6 +25,16 @@ export default function Page() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Debug environment variables
+    console.log("🔍 Environment check:", {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasSiteUrl: !!process.env.NEXT_PUBLIC_SITE_URL,
+      siteUrl: process.env.NEXT_PUBLIC_SITE_URL || window.location.origin,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + "..."
+    })
+    
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
@@ -42,8 +52,13 @@ export default function Page() {
     }
 
     try {
+      // Test Supabase connection first
+      console.log("🔗 Testing Supabase connection...")
+      const { data: healthCheck } = await supabase.from('profiles').select('count').limit(1)
+      console.log("✅ Supabase connection OK:", healthCheck)
+      
       // Use the user's entered password to respect Supabase password policy
-      const { data, error } = await supabase.auth.signUp({
+      const signupData = {
         email,
         password, // use provided password
         options: {
@@ -54,18 +69,28 @@ export default function Page() {
             role: role,
           }
         }
+      }
+      
+      console.log("📤 Signup request:", {
+        email: signupData.email,
+        hasPassword: !!signupData.password,
+        redirectTo: signupData.options.emailRedirectTo,
+        metadata: signupData.options.data
       })
+      
+      const { data, error } = await supabase.auth.signUp(signupData)
 
       if (error) {
         console.error("❌ Signup error:", error)
         throw error
       }
 
-      console.log("✅ Signup successful:", {
+      console.log("✅ Signup response:", {
         user: data.user?.id,
         session: data.session?.user?.id,
         email: data.user?.email,
-        metadata: data.user?.user_metadata
+        metadata: data.user?.user_metadata,
+        needsConfirmation: !data.session
       })
 
       router.push("/auth/sign-up-success")
