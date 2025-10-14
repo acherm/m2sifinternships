@@ -519,9 +519,12 @@ export function AdminDashboard() {
                       )}
 
                       <div className="flex items-center gap-2">
-                        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                        <Dialog open={isDialogOpen && selectedSubject?.id === subject.id} onOpenChange={(open) => {
                           setIsDialogOpen(open)
-                          if (!open) setSignedPdfUrl(null)
+                          if (!open) {
+                            setSignedPdfUrl(null)
+                            setSelectedSubject(null)
+                          }
                         }}>
                           <DialogTrigger asChild>
                             <Button
@@ -551,7 +554,7 @@ export function AdminDashboard() {
 
                           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                             <DialogHeader>
-                              <DialogTitle>{subject.title}</DialogTitle>
+                              <DialogTitle>{selectedSubject?.title}</DialogTitle>
                               <DialogDescription>
                                 Review and update the status of this internship subject.
                               </DialogDescription>
@@ -561,16 +564,16 @@ export function AdminDashboard() {
                               <div>
                                 <Label className="text-sm font-medium">Description</Label>
                                 <div className="mt-1 p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
-                                  {subject.description}
+                                  {selectedSubject?.description}
                                 </div>
                               </div>
 
-                              {subject.pdf_url && (
+                              {selectedSubject?.pdf_url && (
                                 <div>
                                   <Label className="text-sm font-medium">PDF Document</Label>
                                   <div className="mt-2">
                                     <iframe
-                                      src={signedPdfUrl || subject.pdf_url}
+                                      src={signedPdfUrl || selectedSubject.pdf_url}
                                       className="w-full h-80 border rounded"
                                       title="Subject PDF"
                                     />
@@ -581,22 +584,22 @@ export function AdminDashboard() {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                   <Label className="text-sm font-medium">Team Information</Label>
-                                  <div className="mt-1 p-3 bg-muted rounded-md text-sm">{subject.team_info}</div>
+                                  <div className="mt-1 p-3 bg-muted rounded-md text-sm">{selectedSubject?.team_info}</div>
                                 </div>
                                 <div>
                                   <Label className="text-sm font-medium">Supervisors</Label>
                                   <div className="mt-1 p-3 bg-muted rounded-md text-sm">
                                     <p>
-                                      <strong>Main:</strong> {subject.main_supervisor_name} (
-                                      {subject.main_supervisor_email})
+                                      <strong>Main:</strong> {selectedSubject?.main_supervisor_name} (
+                                      {selectedSubject?.main_supervisor_email})
                                     </p>
-                                    {subject.co_supervisors_names && (
+                                    {selectedSubject?.co_supervisors_names && (
                                       <p className="mt-1">
-                                        <strong>Co-supervisors:</strong> {subject.co_supervisors_names}
+                                        <strong>Co-supervisors:</strong> {selectedSubject.co_supervisors_names}
                                       </p>
                                     )}
-                                    {subject.co_supervisors_emails && (
-                                      <p className="text-xs text-muted-foreground mt-1">{subject.co_supervisors_emails}</p>
+                                    {selectedSubject?.co_supervisors_emails && (
+                                      <p className="text-xs text-muted-foreground mt-1">{selectedSubject.co_supervisors_emails}</p>
                                     )}
                                   </div>
                                 </div>
