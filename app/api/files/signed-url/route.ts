@@ -39,13 +39,19 @@ export async function GET(request: NextRequest) {
 
     const bucket = path.slice(0, firstSlash)
     const objectPath = path.slice(firstSlash + 1)
+    if (bucket !== "subject-pdfs" || objectPath.includes("..")) {
+      return NextResponse.json({ error: "Invalid path" }, { status: 400 })
+    }
+    if (!Number.isFinite(expiresIn) || expiresIn <= 0 || expiresIn > 3600) {
+      return NextResponse.json({ error: "Invalid expiresIn" }, { status: 400 })
+    }
 
     const { data, error } = await service.storage.from(bucket).createSignedUrl(objectPath, expiresIn)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     return NextResponse.json({ url: data?.signedUrl })
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "Internal error" }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Internal error" }, { status: 500 })
   }
 }
 

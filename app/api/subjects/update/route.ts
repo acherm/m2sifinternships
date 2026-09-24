@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       title: payload.title,
       description: payload.description,
       pdf_url: payload.pdf_url ?? null,
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "Internal error" }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Internal error" }, { status: 500 })
   }
 }

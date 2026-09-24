@@ -36,7 +36,8 @@ export default function AdminSignupPage() {
 
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
 
-      // Sign up with admin role using email+password so it respects password policy
+      // Accounts are created as students; an existing administrator promotes them
+      // to admin from the User Management tab.
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -45,7 +46,6 @@ export default function AdminSignupPage() {
           data: {
             first_name: firstName,
             last_name: lastName,
-            role: 'admin',
           },
         },
       })
@@ -74,7 +74,7 @@ export default function AdminSignupPage() {
             </div>
             <CardTitle className="text-2xl">Administrator Account Created</CardTitle>
             <CardDescription>
-              Your administrator account has been successfully created. You will be redirected to the dashboard shortly.
+              Your account has been created. An existing administrator must now grant it the administrator role from the User Management tab.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -91,7 +91,7 @@ export default function AdminSignupPage() {
           </div>
           <CardTitle className="text-2xl">Administrator Registration</CardTitle>
           <CardDescription>
-            Create an administrator account for the M2 SIF internship platform
+            Create an account for the M2 SIF internship platform. An existing administrator will then grant you administrator rights.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -161,7 +161,7 @@ export default function AdminSignupPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Account..." : "Create Administrator Account"}
+              {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 

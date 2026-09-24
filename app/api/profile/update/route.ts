@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true, profile })
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? "Internal error" }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Internal error" }, { status: 500 })
   }
 }

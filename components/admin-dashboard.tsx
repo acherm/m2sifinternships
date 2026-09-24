@@ -187,7 +187,7 @@ export function AdminDashboard() {
       setSubjects((prev) =>
         prev.map((subject) =>
           subject.id === selectedSubject.id
-            ? { ...subject, status: reviewStatus as any, admin_comment: adminComment || null }
+            ? { ...subject, status: reviewStatus as Subject["status"], admin_comment: adminComment || null }
             : subject,
         ),
       )
@@ -344,6 +344,25 @@ export function AdminDashboard() {
       setError(err instanceof Error ? err.message : "Failed to delete user")
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const changeUserRole = async (userId: string, role: string) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ role }),
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err?.error || "Failed to change role")
+      }
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)))
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to change role")
     }
   }
 
@@ -920,7 +939,7 @@ export function AdminDashboard() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="subject-select">Select Subject (from student's choices)</Label>
+                    <Label htmlFor="subject-select">Select Subject (from student&apos;s choices)</Label>
                     <Select onValueChange={(value) => {
                       if (value === "no-subjects" || value === "select-student-first") return
                       const subject = subjects.find(s => s.id === value)
@@ -956,7 +975,7 @@ export function AdminDashboard() {
                               })
                             ) : (
                               <SelectItem value="no-subjects" disabled>
-                                No available subjects from this student's choices
+                                No available subjects from this student&apos;s choices
                               </SelectItem>
                             )
                           })()
@@ -1022,6 +1041,17 @@ export function AdminDashboard() {
                       <p className="text-sm text-muted-foreground">
                         Joined {new Date(user.created_at).toLocaleDateString()}
                       </p>
+                      <Select value={user.role} onValueChange={(value) => changeUserRole(user.id, value)}>
+                        <SelectTrigger className="w-[140px]" aria-label="Change role">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="student">student</SelectItem>
+                          <SelectItem value="supervisor">supervisor</SelectItem>
+                          <SelectItem value="observer">observer</SelectItem>
+                          <SelectItem value="admin">admin</SelectItem>
+                        </SelectContent>
+                      </Select>
                       {user.role !== "admin" && (
                         <Button
                           variant="destructive"

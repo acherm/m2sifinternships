@@ -1,64 +1,34 @@
-# Hidden Registration URLs
+# Administrator and Observer Accounts
 
-This document contains the private URLs for administrator and observer registration. These URLs should only be shared with authorized personnel.
+Since migration `scripts/006_lock_down_roles.sql`, **every new account is created as a student**, whatever page or API it was created from. The role stored in signup metadata is ignored by the database trigger, and users cannot change their own role (enforced by a row-level-security policy, not just by the UI).
 
-## Administrator Registration
+Administrator and observer rights are granted only by an existing administrator.
 
-**URL**: `/auth/admin-signup`
+## Granting admin or observer rights
 
-**Access**: Private - Only share with authorized administrators
+1. Ask the person to sign up (any signup page works; `/auth/admin-signup` and `/auth/observer-signup` still exist and explain the process).
+2. Log in as an administrator and open the **User Management** tab of the dashboard.
+3. Use the role selector next to the person's name to set `admin` or `observer`.
 
-**Features**:
-- Creates administrator accounts with full system access
-- Can review and validate internship subjects
-- Can manage student assignments
-- Can send assignment notification emails
-- Can manage user accounts
+Behind the scenes this calls `PATCH /api/admin/users/:id` with `{ "role": "..." }`. The route checks that the caller is an admin and then updates the profile with the service role. An admin cannot demote or delete their own account.
 
-**Usage**:
-1. Navigate to: `https://yourdomain.com/auth/admin-signup`
-2. Fill in the registration form
-3. Account is created with administrator role
-4. Redirected to admin dashboard
+## Bootstrapping the first administrator
 
-## Observer Registration
+On a fresh database with no admin yet, promote the first account directly in the Supabase SQL editor:
 
-**URL**: `/auth/observer-signup`
+```sql
+UPDATE public.profiles SET role = 'admin' WHERE email = 'you@example.org';
+```
 
-**Access**: Private - Only share with authorized observers
+## Role permissions summary
 
-**Features**:
-- Creates observer accounts with read-only access
-- Can view validated internship subjects
-- Can view student assignments
-- Cannot modify any data
-- Perfect for external stakeholders who need visibility
-
-**Usage**:
-1. Navigate to: `https://yourdomain.com/auth/observer-signup`
-2. Fill in the registration form
-3. Account is created with observer role
-4. Redirected to observer dashboard
-
-## Security Notes
-
-- These URLs are not linked from the main application
-- Regular signup page only allows student and supervisor roles
-- Administrator and observer roles cannot be selected in public registration
-- URLs should be kept confidential and only shared with authorized personnel
-
-## Role Permissions Summary
-
-| Role | Can View Subjects | Can Validate Subjects | Can Manage Assignments | Can Send Emails | Can Manage Users |
+| Role | Can view subjects | Can validate subjects | Can manage assignments | Can send emails | Can manage users |
 |------|------------------|---------------------|----------------------|-----------------|------------------|
 | Student | ✅ (validated only) | ❌ | ❌ | ❌ | ❌ |
 | Supervisor | ✅ (own subjects) | ✅ (own subjects) | ❌ | ❌ | ❌ |
 | Observer | ✅ (validated only) | ❌ | ❌ | ❌ | ❌ |
 | Administrator | ✅ (all) | ✅ (all) | ✅ | ✅ | ✅ |
 
-## Implementation Details
+## History
 
-- Hidden URLs are implemented as separate Next.js pages
-- Role is set during registration via Supabase auth metadata
-- Role-based access control is enforced throughout the application
-- Observer dashboard fetches data using admin API endpoints (with proper authentication)
+Before September 2026 the two "hidden" signup URLs created admin and observer accounts directly, based on a role field sent by the browser. Anyone who knew the URL, or who called the Supabase signup API with the public anon key, could create an administrator. That path is closed.

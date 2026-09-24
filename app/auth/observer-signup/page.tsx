@@ -35,8 +35,7 @@ export default function ObserverSignupPage() {
           emailRedirectTo: `${window.location.origin}/auth/confirm`,
           data: {
             first_name: firstName,
-            last_name: lastName,
-            role: 'observer'
+            last_name: lastName
           }
         }
       })
@@ -68,7 +67,7 @@ export default function ObserverSignupPage() {
             </div>
             <CardTitle className="text-2xl">Observer Account Created</CardTitle>
             <CardDescription>
-              Your observer account has been successfully created. You will be redirected to the dashboard shortly.
+              Your account has been created. An administrator must now grant it the observer role from the User Management tab.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -85,7 +84,7 @@ export default function ObserverSignupPage() {
           </div>
           <CardTitle className="text-2xl">Observer Registration</CardTitle>
           <CardDescription>
-            Create an observer account to view validated internship subjects and assignments
+            Create an account to view validated internship subjects and assignments. An administrator will then grant you observer rights.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -132,7 +131,7 @@ export default function ObserverSignupPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Account..." : "Create Observer Account"}
+              {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 

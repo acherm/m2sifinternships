@@ -282,7 +282,7 @@ export function SupervisorDashboard({ onCreateNew }: SupervisorDashboardProps) {
         {subjects.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground mb-4">You haven't submitted any subjects yet.</p>
+              <p className="text-muted-foreground mb-4">You haven&apos;t submitted any subjects yet.</p>
               <Button onClick={onCreateNew}>
                 <Plus className="w-4 h-4 mr-2" />
                 Submit Your First Subject

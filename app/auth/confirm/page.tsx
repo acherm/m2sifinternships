@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import type { EmailOtpType } from "@supabase/supabase-js"
 
 export default function ConfirmPage() {
   const router = useRouter()
@@ -46,7 +47,7 @@ export default function ConfirmPage() {
           setMessage("Verifying your email link…")
           const { error } = await supabase.auth.verifyOtp({
             token_hash: pkceToken,
-            type: 'magiclink' as any,
+            type: 'magiclink',
           })
           if (error) {
             // If session already exists despite error (race), proceed
@@ -131,7 +132,7 @@ export default function ConfirmPage() {
         // Try to verify the OTP - let Supabase handle the type automatically
         const { data, error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
-          type: type as any || 'email'
+          type: (type as EmailOtpType | null) || 'email'
         })
 
         console.log("📧 Verification result:", { error, data })

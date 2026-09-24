@@ -1,20 +1,30 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { Resend } from "resend"
-
-const resend = new Resend(process.env.RESEND_API_KEY)
+import { getRouteUser, escapeHtml } from "@/lib/supabase/route-auth"
 
 export async function POST(request: NextRequest) {
-  console.log("📧 Assignment notification API called (Resend)")
   try {
-    const payload = await request.json()
-    console.log("📧 Received payload:", payload)
-    const { studentEmail, studentName, subjectTitle, supervisorName } = payload
+    // Only administrators may trigger assignment emails.
+    const user = await getRouteUser(request)
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (user.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json({ error: "Resend API key not configured" }, { status: 500 })
     }
 
-    // Create beautiful HTML email template
+    const payload = await request.json()
+    const { studentEmail, studentName, subjectTitle, supervisorName } = payload as Record<string, unknown>
+
+    if (typeof studentEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(studentEmail)) {
+      return NextResponse.json({ error: "Invalid student email" }, { status: 400 })
+    }
+
+    const safeStudentName = escapeHtml(studentName)
+    const safeSubjectTitle = escapeHtml(subjectTitle)
+    const safeSupervisorName = escapeHtml(supervisorName)
+    const appUrl = `${process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin}/app`
+
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -37,30 +47,30 @@ export async function POST(request: NextRequest) {
           <h1>🎓 Internship Assignment Confirmation</h1>
           <p>M2 SIF Program</p>
         </div>
-        
+
         <div class="content">
-          <h2 style="color: #495057; margin-top: 0;">Dear ${studentName},</h2>
-          
+          <h2 style="color: #495057; margin-top: 0;">Dear ${safeStudentName},</h2>
+
           <p style="font-size: 16px; margin-bottom: 20px;">
             We are pleased to inform you that you have been assigned to an internship for the M2 SIF program.
           </p>
-          
+
           <div class="assignment-box">
             <h3 style="color: #495057; margin-top: 0;">📋 Assignment Details</h3>
-            <p><strong>Internship Subject:</strong> ${subjectTitle}</p>
-            <p><strong>Supervisor:</strong> ${supervisorName}</p>
+            <p><strong>Internship Subject:</strong> ${safeSubjectTitle}</p>
+            <p><strong>Supervisor:</strong> ${safeSupervisorName}</p>
           </div>
-          
+
           <p style="font-size: 16px; margin-bottom: 20px;">
             Please contact your supervisor to discuss the next steps and begin your internship.
           </p>
-          
+
           <div style="text-align: center;">
-            <a href="${request.nextUrl.origin}/app" class="cta-button">
+            <a href="${appUrl}" class="cta-button">
               Access Internship Platform
             </a>
           </div>
-          
+
           <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin: 25px 0;">
             <h4 style="margin-top: 0; color: #92400e;">📋 Next Steps:</h4>
             <ul style="color: #92400e;">
@@ -69,13 +79,13 @@ export async function POST(request: NextRequest) {
               <li>Review any additional requirements or documentation</li>
             </ul>
           </div>
-          
+
           <p style="font-size: 16px; margin-bottom: 20px;">
             If you have any questions, please don't hesitate to contact your supervisor or the administration.
           </p>
-          
+
           <hr style="border: none; border-top: 1px solid #dee2e6; margin: 30px 0;">
-          
+
           <p style="font-size: 12px; color: #6c757d; text-align: center; margin: 0;">
             Best regards,<br>
             <strong>M2 SIF Administration Team</strong>
@@ -85,48 +95,39 @@ export async function POST(request: NextRequest) {
       </html>
     `
 
-    // Send email using Resend
-    console.log("📧 Sending email via Resend...")
-    console.log("To:", studentEmail)
-    console.log("Subject: 🎓 Internship Assignment Confirmation - M2 SIF")
-    
+    const resend = new Resend(process.env.RESEND_API_KEY)
     const { data, error } = await resend.emails.send({
-      from: 'M2 SIF <noreply@send.mathieuacher.com>', // Using your verified domain
+      from: "M2 SIF <noreply@send.mathieuacher.com>",
       to: [studentEmail],
-      subject: '🎓 Internship Assignment Confirmation - M2 SIF',
+      subject: "🎓 Internship Assignment Confirmation - M2 SIF",
       html: emailHtml,
-      replyTo: 'mathieu.acher@inria.fr', // Your email for replies
+      replyTo: "mathieu.acher@inria.fr",
     })
 
     if (error) {
-      console.error("❌ Resend error:", error)
-      return NextResponse.json({ 
-        success: false,
-        error: error.message,
-        message: "Failed to send email via Resend"
-      }, { status: 500 })
+      console.error("Resend error:", error.message)
+      return NextResponse.json(
+        { success: false, error: error.message, message: "Failed to send email via Resend" },
+        { status: 500 },
+      )
     }
 
-    console.log("✅ Email sent successfully via Resend:", data)
-    
-    const successResponse = { 
-      success: true, 
+    console.log(`Assignment email sent to ${studentEmail} by admin ${user.id} (id ${data?.id})`)
+
+    return NextResponse.json({
+      success: true,
       message: "Email sent successfully via Resend",
-      emailId: data.id,
+      emailId: data?.id,
       emailData: {
         to: studentEmail,
         subject: "🎓 Internship Assignment Confirmation - M2 SIF",
         student: studentName,
         subjectTitle,
-        supervisor: supervisorName
-      }
-    }
-    
-    console.log("📧 Returning response:", successResponse)
-    return NextResponse.json(successResponse)
-
-  } catch (e: any) {
+        supervisor: supervisorName,
+      },
+    })
+  } catch (e) {
     console.error("Error sending assignment notification:", e)
-    return NextResponse.json({ error: e?.message ?? "Internal error" }, { status: 500 })
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Internal error" }, { status: 500 })
   }
 }
