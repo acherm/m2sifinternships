@@ -9,7 +9,7 @@ set -euo pipefail
 
 HOST="${HOST:-m2sif}"  # ssh config alias: matacher@m2sif2627 via welcome1 jump host
 APP_DIR="${APP_DIR:-/var/www/m2sif}"
-SITE_URL="${SITE_URL:-http://m2sif202627.univ-rennes1.fr}"
+SITE_URL="${SITE_URL:-http://m2sif2627.istic.univ-rennes1.fr}"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 [[ -f "$PROJECT_ROOT/.env.local" ]] || { echo ".env.local missing"; exit 1; }

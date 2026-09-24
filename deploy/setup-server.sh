@@ -8,8 +8,7 @@ set -euo pipefail
 
 APP_USER="${APP_USER:-$USER}"
 APP_DIR="${APP_DIR:-/var/www/m2sif}"
-DOMAIN="${DOMAIN:-m2sif202627.univ-rennes1.fr}"          # public URL
-ALT_DOMAIN="${ALT_DOMAIN:-m2sif2627.istic.univ-rennes1.fr}"  # VM hostname
+DOMAIN="${DOMAIN:-m2sif2627.istic.univ-rennes1.fr}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "== Packages"
@@ -34,7 +33,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable m2sif >/dev/null
 
 echo "== nginx site for $DOMAIN"
-sed -e "s|__DOMAIN__|$DOMAIN $ALT_DOMAIN|g" "$SCRIPT_DIR/nginx-m2sif.conf" \
+sed -e "s|__DOMAIN__|$DOMAIN|g" "$SCRIPT_DIR/nginx-m2sif.conf" \
   | sudo tee /etc/nginx/sites-available/m2sif >/dev/null
 sudo ln -sf /etc/nginx/sites-available/m2sif /etc/nginx/sites-enabled/m2sif
 sudo rm -f /etc/nginx/sites-enabled/default

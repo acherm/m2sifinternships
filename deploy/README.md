@@ -1,7 +1,7 @@
 # Deploying the internships app on the university VM
 
-Public URL: http://m2sif202627.univ-rennes1.fr/ (VM: m2sif2627.istic.univ-rennes1.fr,
-reachable over SSH only from the ISTIC network, e.g. via the `welcome1` login server).
+Public URL: http://m2sif2627.istic.univ-rennes1.fr/ (the VM's own hostname; SSH is
+reachable only from the ISTIC network, e.g. via the `welcome1` login server).
 
 ## First install (once, on the VM)
 
@@ -23,7 +23,7 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 RESEND_API_KEY=...
-NEXT_PUBLIC_SITE_URL=http://m2sif202627.univ-rennes1.fr
+NEXT_PUBLIC_SITE_URL=http://m2sif2627.istic.univ-rennes1.fr
 ```
 
 `NEXT_PUBLIC_*` values are baked in at build time, so set the URL before building.
@@ -43,7 +43,7 @@ Once the public hostname reaches the VM on port 80 from the internet:
 
 ```bash
 sudo apt-get install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d m2sif202627.univ-rennes1.fr
+sudo certbot --nginx -d m2sif2627.istic.univ-rennes1.fr
 ```
 
 then change `NEXT_PUBLIC_SITE_URL` to `https://...` and run `update.sh` again.
@@ -51,7 +51,7 @@ If the university terminates TLS on a front proxy instead, nothing to do here.
 
 ## Supabase settings to update for the new URL
 
-Authentication > URL Configuration: add `http://m2sif202627.univ-rennes1.fr/auth/confirm`
+Authentication > URL Configuration: add `http://m2sif2627.istic.univ-rennes1.fr/auth/confirm`
 to the redirect allow list (and the https variant later).
 
 ## Useful commands on the VM
