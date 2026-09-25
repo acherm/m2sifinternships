@@ -1,16 +1,22 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
 
-export default async function Home() {
-  const supabase = await createClient()
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export default function Home() {
+  const router = useRouter()
 
-  if (!user) {
-    redirect("/auth/login")
-  }
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      router.replace(session ? "/app" : "/auth/login")
+    })
+  }, [router])
 
-  redirect("/app")
+  return (
+    <main className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
+      <p>Loading…</p>
+    </main>
+  )
 }

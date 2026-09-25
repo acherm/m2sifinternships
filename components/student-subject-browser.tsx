@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { resolvePdfUrl } from "@/lib/supabase/data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -48,19 +49,6 @@ export function StudentSubjectBrowser() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null)
   const [signedPdfUrl, setSignedPdfUrl] = useState<string | null>(null)
-
-  const resolvePdfUrl = async (pdfField: string | null) => {
-    if (!pdfField) return null
-    const isHttp = /^https?:\/\//i.test(pdfField)
-    if (isHttp) return pdfField
-    try {
-      const res = await fetch(`/api/files/signed-url?path=${encodeURIComponent(pdfField)}`)
-      const json = await res.json()
-      return json.url || null
-    } catch {
-      return null
-    }
-  }
 
   const supabase = createClient()
 

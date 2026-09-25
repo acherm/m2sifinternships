@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { listAllSubjects, listAssignmentsDetailed } from "@/lib/supabase/data"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -52,24 +52,12 @@ export default function ObserverDashboard() {
       setLoading(true)
       setError(null)
 
-      // Fetch validated subjects
-      const subjectsResponse = await fetch("/api/admin/subjects")
-      if (!subjectsResponse.ok) {
-        const errorData = await subjectsResponse.json()
-        throw new Error(errorData.error || "Failed to fetch subjects")
-      }
-      const subjectsData = await subjectsResponse.json()
-      const validatedSubjects = subjectsData.filter((subject: Subject) => subject.status === "validated")
-      setSubjects(validatedSubjects)
+      // Row-level security already limits observers to validated subjects.
+      const subjectsData = (await listAllSubjects()) as Subject[]
+      setSubjects(subjectsData.filter((subject) => subject.status === "validated"))
 
-      // Fetch assignments
-      const assignmentsResponse = await fetch("/api/admin/assignments")
-      if (!assignmentsResponse.ok) {
-        const errorData = await assignmentsResponse.json()
-        throw new Error(errorData.error || "Failed to fetch assignments")
-      }
-      const assignmentsData = await assignmentsResponse.json()
-      setAssignments(assignmentsData)
+      const assignmentsData = await listAssignmentsDetailed()
+      setAssignments(assignmentsData as unknown as Assignment[])
 
     } catch (err) {
       console.error("Observer dashboard error:", err)

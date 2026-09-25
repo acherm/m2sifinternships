@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { resolvePdfUrl, uploadSubjectPdf, updateSubject } from "@/lib/supabase/data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -53,19 +54,6 @@ export function SupervisorDashboard({ onCreateNew }: SupervisorDashboardProps) {
 
   const supabase = createClient()
 
-  const resolvePdfUrl = async (pdfField: string | null) => {
-    if (!pdfField) return null
-    const isHttp = /^https?:\/\//i.test(pdfField)
-    if (isHttp) return pdfField
-    try {
-      const res = await fetch(`/api/files/signed-url?path=${encodeURIComponent(pdfField)}`)
-      const json = await res.json()
-      return json.url || null
-    } catch {
-      return null
-    }
-  }
-
   useEffect(() => {
     fetchSubjects()
   }, [])
@@ -97,30 +85,15 @@ export function SupervisorDashboard({ onCreateNew }: SupervisorDashboardProps) {
 
     setIsSubmitting(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error("User not authenticated")
-
-      // Upload new PDF if provided
+      // Upload new PDF if provided (straight to Supabase Storage)
       let uploadedStoragePath: string | null = editingSubject.pdf_url
       if (pdfFile) {
-        const form = new FormData()
-        form.append("file", pdfFile)
-        form.append("userId", user.id)
-        const res = await fetch("/api/files/upload", { method: "POST", body: form, credentials: "include" })
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}))
-          throw new Error(j?.error || "Failed to upload PDF")
-        }
-        const j = await res.json()
-        uploadedStoragePath = j.path || null
+        uploadedStoragePath = await uploadSubjectPdf(pdfFile)
       }
 
-      const response = await fetch("/api/subjects/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          id: editingSubject.id,
+      await updateSubject(
+        editingSubject.id,
+        {
           title: editingSubject.title,
           description: editingSubject.description,
           pdf_url: uploadedStoragePath,
@@ -129,13 +102,9 @@ export function SupervisorDashboard({ onCreateNew }: SupervisorDashboardProps) {
           main_supervisor_email: editingSubject.main_supervisor_email,
           co_supervisors_names: editingSubject.co_supervisors_names || "",
           co_supervisors_emails: editingSubject.co_supervisors_emails || "",
-        }),
-      })
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err?.error || "Failed to update subject")
-      }
+        },
+        "supervisor",
+      )
 
       // Update local state - set status to pending since supervisor made changes
       setSubjects((prev) =>

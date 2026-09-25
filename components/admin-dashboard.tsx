@@ -2,6 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import {
+  listChoices,
+  listUsers,
+  listAssignments,
+  createAssignment,
+  deleteAssignment as removeAssignment,
+  deleteUserProfile,
+  setUserRole,
+  resolvePdfUrl,
+  sendAssignmentEmail,
+  type Role,
+} from "@/lib/supabase/data"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -121,46 +133,17 @@ export function AdminDashboard() {
 
       if (subjectsError) throw subjectsError
 
-      // Use server API routes (service role) to bypass RLS for admin-only views
-      const [choicesRes, usersRes] = await Promise.all([
-        fetch("/api/admin/choices", { credentials: "include" }),
-        fetch("/api/admin/users", { credentials: "include" }),
+      // Direct Supabase queries; row-level security grants admins the full view.
+      const [choicesData, usersData, assignmentsData] = await Promise.all([
+        listChoices(),
+        listUsers(),
+        listAssignments(),
       ])
 
-      // Try to fetch assignments, but don't fail if table doesn't exist yet
-      let assignmentsRes
-      try {
-        assignmentsRes = await fetch("/api/assignments", { credentials: "include" })
-      } catch (err) {
-        console.warn("Assignments table not available yet:", err)
-        assignmentsRes = { ok: false, json: () => Promise.resolve({ assignments: [] }) }
-      }
-
-      if (!choicesRes.ok) {
-        const err = await choicesRes.json().catch(() => ({}))
-        throw new Error(`Failed to load choices${err?.error ? `: ${err.error}` : ""}`)
-      }
-      if (!usersRes.ok) {
-        const err = await usersRes.json().catch(() => ({}))
-        throw new Error(`Failed to load users${err?.error ? `: ${err.error}` : ""}`)
-      }
-      // Handle assignments response gracefully
-      let assignmentsData = []
-      if (assignmentsRes.ok) {
-        const assignmentsJson = await assignmentsRes.json()
-        assignmentsData = assignmentsJson.assignments || []
-      } else {
-        console.warn("Assignments not available - table may not exist yet")
-        assignmentsData = []
-      }
-
-      const choicesJson = await choicesRes.json()
-      const usersJson = await usersRes.json()
-
       setSubjects(subjectsData || [])
-      setStudentChoices(choicesJson.choices || [])
-      setUsers(usersJson.users || [])
-      setAssignments(assignmentsData)
+      setStudentChoices(choicesData as unknown as StudentChoice[])
+      setUsers(usersData as unknown as UserProfile[])
+      setAssignments(assignmentsData as unknown as Assignment[])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch data")
     } finally {
@@ -212,20 +195,7 @@ export function AdminDashboard() {
 
     setIsAssigning(true)
     try {
-      const response = await fetch("/api/assignments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          student_id: selectedStudentForAssignment.id,
-          subject_id: selectedSubjectForAssignment.id,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to create assignment")
-      }
+      await createAssignment(selectedStudentForAssignment.id, selectedSubjectForAssignment.id)
 
       // Refresh data
       await fetchAllData()
@@ -252,21 +222,7 @@ export function AdminDashboard() {
       }
       console.log("📧 Sending payload:", emailPayload)
       
-      const response = await fetch("/api/notifications/assignment-resend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(emailPayload),
-      })
-
-      console.log("📧 Response status:", response.status)
-      if (!response.ok) {
-        const error = await response.json()
-        console.error("📧 API Error:", error)
-        throw new Error(error.error || "Failed to send email")
-      }
-
-      const result = await response.json()
+      const result = await sendAssignmentEmail(emailPayload)
       console.log("📧 Email sent successfully:", result)
       closeEmailDialog()
       setError(null)
@@ -309,15 +265,7 @@ export function AdminDashboard() {
 
     setIsDeleting(true)
     try {
-      const response = await fetch(`/api/assignments/${assignmentId}`, {
-        method: "DELETE",
-        credentials: "include",
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to delete assignment")
-      }
+      await removeAssignment(assignmentId)
 
       // Refresh data
       await fetchAllData()
@@ -332,11 +280,7 @@ export function AdminDashboard() {
     if (!confirmDeleteId) return
     setIsDeleting(true)
     try {
-      const response = await fetch(`/api/admin/users/${confirmDeleteId}`, { method: "DELETE", credentials: "include" })
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err?.error || "Failed to delete user")
-      }
+      await deleteUserProfile(confirmDeleteId)
       setUsers((prev) => prev.filter((user) => user.id !== confirmDeleteId))
       setError(null)
       setConfirmDeleteId(null)
@@ -349,16 +293,7 @@ export function AdminDashboard() {
 
   const changeUserRole = async (userId: string, role: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ role }),
-      })
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err?.error || "Failed to change role")
-      }
+      await setUserRole(userId, role as Role)
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)))
       setError(null)
     } catch (err) {
@@ -558,9 +493,8 @@ export function AdminDashboard() {
                                   const isHttp = /^https?:\/\//i.test(subject.pdf_url)
                                   if (isHttp) setSignedPdfUrl(subject.pdf_url)
                                   else {
-                                    fetch(`/api/files/signed-url?path=${encodeURIComponent(subject.pdf_url)}`)
-                                      .then((r) => r.json())
-                                      .then((j) => setSignedPdfUrl(j.url || null))
+                                    resolvePdfUrl(subject.pdf_url)
+                                      .then((url) => setSignedPdfUrl(url))
                                       .catch(() => setSignedPdfUrl(null))
                                   }
                                 }
@@ -684,9 +618,8 @@ export function AdminDashboard() {
                               if (isHttp) {
                                 window.open(subject.pdf_url as string, "_blank", "noopener,noreferrer")
                               } else {
-                                const res = await fetch(`/api/files/signed-url?path=${encodeURIComponent(subject.pdf_url as string)}`)
-                                const j = await res.json().catch(() => ({}))
-                                if (j?.url) window.open(j.url, "_blank", "noopener,noreferrer")
+                                const url = await resolvePdfUrl(subject.pdf_url as string)
+                                if (url) window.open(url, "_blank", "noopener,noreferrer")
                                 else setError("Failed to generate PDF link")
                               }
                             }}

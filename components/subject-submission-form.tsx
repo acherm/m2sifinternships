@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { uploadSubjectPdf, createSubject } from "@/lib/supabase/data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -68,41 +69,23 @@ export function SubjectSubmissionForm() {
       } = await supabase.auth.getUser()
       if (!user) throw new Error("User not authenticated")
 
-      // Upload PDF if provided via server (service role)
+      // Upload PDF if provided (straight to Supabase Storage, into the user's own folder)
       let uploadedStoragePath: string | null = null
       if (pdfFile) {
-        const form = new FormData()
-        form.append("file", pdfFile)
-        form.append("userId", user.id)
-        const res = await fetch("/api/files/upload", { method: "POST", body: form, credentials: "include" })
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}))
-          throw new Error(j?.error || "Failed to upload PDF")
-        }
-        const j = await res.json()
-        uploadedStoragePath = j.path || null
+        uploadedStoragePath = await uploadSubjectPdf(pdfFile)
         setPdfStoragePath(uploadedStoragePath)
       }
 
-      const response = await fetch("/api/subjects/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
-          pdf_url: uploadedStoragePath || null,
-          team_info: formData.teamInfo,
-          main_supervisor_name: formData.mainSupervisorName,
-          main_supervisor_email: formData.mainSupervisorEmail,
-          co_supervisors_names: formData.coSupervisorsNames || "",
-          co_supervisors_emails: formData.coSupervisorsEmails || "",
-        }),
+      await createSubject({
+        title: formData.title,
+        description: formData.description,
+        pdf_url: uploadedStoragePath || null,
+        team_info: formData.teamInfo,
+        main_supervisor_name: formData.mainSupervisorName,
+        main_supervisor_email: formData.mainSupervisorEmail,
+        co_supervisors_names: formData.coSupervisorsNames || "",
+        co_supervisors_emails: formData.coSupervisorsEmails || "",
       })
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err?.error || "Failed to submit subject")
-      }
 
 
       setSuccess(true)

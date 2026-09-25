@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { updateMyProfile } from "@/lib/supabase/data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -27,19 +28,7 @@ export function ProfileUpdateDialog({ open, onOpenChange, currentEmail, onUpdate
     setError(null)
 
     try {
-      const response = await fetch("/api/profile/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastName,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to update profile")
-      }
+      await updateMyProfile(firstName, lastName)
 
       setSuccess(true)
       onUpdate()

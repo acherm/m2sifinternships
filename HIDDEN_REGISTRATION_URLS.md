@@ -10,7 +10,7 @@ Administrator and observer rights are granted only by an existing administrator.
 2. Log in as an administrator and open the **User Management** tab of the dashboard.
 3. Use the role selector next to the person's name to set `admin` or `observer`.
 
-Behind the scenes this calls `PATCH /api/admin/users/:id` with `{ "role": "..." }`. The route checks that the caller is an admin and then updates the profile with the service role. An admin cannot demote or delete their own account.
+Behind the scenes the browser updates the `profiles` row directly. The row-level-security policy "Admins can update any profile" (scripts/007) only lets administrators do this, and refuses an admin demoting themself. There is no server in between.
 
 ## Bootstrapping the first administrator
 
