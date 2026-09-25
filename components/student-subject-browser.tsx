@@ -360,11 +360,11 @@ export function StudentSubjectBrowser() {
                               <div>
                                 <Label className="text-sm font-medium">Additional Documentation</Label>
                                 <div className="mt-2">
-                                  <iframe
-                                    src={signedPdfUrl || subject.pdf_url}
-                                    className="w-full h-80 border rounded"
-                                    title="Subject PDF"
-                                  />
+                                  {signedPdfUrl ? (
+                                    <iframe src={signedPdfUrl} className="w-full h-80 border rounded" title="Subject PDF" />
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Loading PDF…</p>
+                                  )}
                                 </div>
                               </div>
                             )}

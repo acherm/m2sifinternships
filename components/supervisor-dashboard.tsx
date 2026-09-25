@@ -323,11 +323,17 @@ export function SupervisorDashboard({ onCreateNew }: SupervisorDashboardProps) {
                             <div>
                               <Label className="text-sm font-medium">PDF Document</Label>
                               <div className="mt-1">
-                                <Button variant="outline" size="sm" asChild>
-                                  <a href={subject.pdf_url} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="w-4 h-4 mr-2" />
-                                    View PDF
-                                  </a>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={async () => {
+                                    const url = await resolvePdfUrl(subject.pdf_url)
+                                    if (url) window.open(url, "_blank", "noopener,noreferrer")
+                                    else setError("Failed to generate PDF link")
+                                  }}
+                                >
+                                  <ExternalLink className="w-4 h-4 mr-2" />
+                                  View PDF
                                 </Button>
                               </div>
                             </div>
