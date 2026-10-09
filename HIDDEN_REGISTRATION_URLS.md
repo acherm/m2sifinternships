@@ -1,6 +1,6 @@
 # Administrator and Observer Accounts
 
-Since migration `scripts/006_lock_down_roles.sql`, **every new account is created as a student**, whatever page or API it was created from. The role stored in signup metadata is ignored by the database trigger, and users cannot change their own role (enforced by a row-level-security policy, not just by the UI).
+Since migrations `scripts/006` and `scripts/008`, a new account can only be a **student** or a **supervisor** (the choice offered on the public signup page). Any other role requested at signup is ignored by the database trigger, and users cannot change their own role afterwards (enforced by a row-level-security policy, not just by the UI).
 
 Administrator and observer rights are granted only by an existing administrator.
 
